@@ -21,7 +21,7 @@ if len(sys.argv) == 1:
 	exit()
 
 searchQuery= sys.argv[1]
-maxTweets = 1000000
+maxTweets = 10000
 tweetsPerQry = 45
 folderName = str(datetime.now().date()-timedelta(1))
 if not os.path.exists(folderName):
@@ -55,7 +55,7 @@ with open(folderName+'/'+fName, 'w') as f:
             		salir=1
             		break
             	else:
-                	f.write(jsonpickle.encode(tweet._json, unpicklable=False) + '\n')
+                	f.write(jsonpickle.encode(tweet._json) + '\n')
             tweetCount += len(new_tweets)
             print("Se descargaron {0} tweets".format(tweetCount))
             max_id = new_tweets[-1].id
