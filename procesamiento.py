@@ -1,27 +1,38 @@
 import sys, os , json ,re
 import pandas as pd
 import nltk, unicodedata, inflect
+import indicoio
 from datetime import datetime, timedelta
 from textblob import TextBlob
 from nltk.corpus import stopwords
+
+indicoio.config.api_key = "35f35a51d29abd242a14ce2ff950e70d"
 
 # # GLOBALES # #
 zoits = ["futaleufu","putre","osorno","valparaiso"]
 if not os.path.exists('output'):
 	os.makedirs('output')
-folderName = str(datetime.now().date()-timedelta(1))
+#folderName = str(datetime.now().date()-timedelta(1))
+folderName = "2018-12-05"
 # # # # # # # #
 ## FUNCIONES ##
 def leer_bolsa(lugar):
 	if(os.path.isfile('output/'+lugar+'_palabras.csv')):
-		df = pd.read_csv(lugar+'_palabras.csv',index_col=0)
+		df = pd.read_csv('output/'+lugar+'_palabras.csv',index_col=0)
 		bolsa = df.to_dict("split")
-		bolsa = dict(zip(bolsa["index"],bolsa["data"]))
+		bolsa = dict(zip(bolsa["index"],bolsa["data"][0]))
 		return bolsa
 	else:
 		return None
 
 def spanish_sentimiento(texto,positivos,neutrales,negativos):
+	resultado = indicoio.sentiment(texto,lang='spanish')
+	if (resultado >= 0.6 ):
+		positivos += 1
+	elif (resultado < 0.6 and 0.5 >= resultado):
+		neutrales += 1
+	else:
+		negativos += 1
 	return positivos,neutrales,negativos
 
 def english_sentimiento(texto,positivos,neutrales,negativos):
@@ -47,13 +58,13 @@ def crear_output (lugar,positivos,neutrales,negativos,popular):
 		'positivos': positivos,
 		'neutrales': neutrales, 
 		'negativos': negativos, 
-		'mas favorito':popular['text']}]
+		'Twitt del dia':popular['text']}]
 	df = pd.DataFrame(datos)
 	df = df[[
-		'Fecha',
-		'Positivos',
-		'Neutrales',
-		'Negativos',
+		'fecha',
+		'positivos',
+		'neutrales',
+		'negativos',
 		'Twitt del dia']]
 	namefile='output/'+lugar+'.csv'
 	if (os.path.isfile(namefile)):
@@ -66,6 +77,7 @@ def crear_output (lugar,positivos,neutrales,negativos,popular):
 def crear_bolsa(lugar,bolsa):
 	df = pd.DataFrame.from_dict(bolsa,orient='index')
 	df.to_csv('output/'+lugar+'_palabras.csv')
+	return
 
 def remover_non_ascii(listaPalabras):
 	nueva_lista = []
@@ -110,11 +122,11 @@ def normalizar(texto,bolsa):
 	listaPalabras = remove_stopwords(listaPalabras)
 	for palabra in listaPalabras:
 		if bolsa == None:
-			bolsa = {palabra : (1)}
-		elif palabra in bolsa.values():
+			bolsa = {palabra : 1}
+		elif palabra in bolsa:	
 			bolsa[palabra] += 1
 		else:
-			bolsa[palabra] = (1)
+			bolsa[palabra] = 1
 	return bolsa
 
 ## ............. ##
@@ -134,10 +146,12 @@ for lugar in zoits:
 				continue
 			else:
 				if(tweet['lang']=='es'):
-					normalizar(tweet['text'],bolsa)
+					bolsa=normalizar(tweet['text'],bolsa)
 					pos_contador,neu_contador,neg_contador=spanish_sentimiento(tweet['text'],pos_contador,neu_contador,neg_contador)
 				elif(tweet['lang']=='en'):
 					pos_contador,neu_contador,neg_contador=english_sentimiento(tweet['text'],pos_contador,neu_contador,neg_contador)
 				popular = buscar_popular(popular,tweet)
-		#crear_output(lugar,pos_contador,neu_contador,neg_contador,popular)
-		#crear_bolsa(lugar,bolsa)
+		#print(bolsa)
+		crear_output(lugar,pos_contador,neu_contador,neg_contador,popular)
+		crear_bolsa(lugar,bolsa)
+
