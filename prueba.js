@@ -25,7 +25,27 @@ d3.csv("futaleufu_palabras.csv",types, function (error,graph){
           .attr("cx", function(d){ return d.x; })
           .attr("cy", function(d){ return d.y; })
     });
-    var node = svg.append("g")
+    var node = svg.selectAll("g")
+        .data(graph)
+      .enter().append("g")
+        //.attr("transform",function(d){return "translate(0,"+ d.cantidad * d.cantidad +")";});
+    node.append("circle")
+        .attr("r", function(d) { return d.cantidad*10; })
+        .attr("fill", function(d) { return color(d.palabra); })
+        .text(function(d){return d.palabra})
+        .attr("cx", function(d){ return d.x*2.5+350; })
+        .attr("cy", function(d){ return d.y*2.5+350; })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+    node.append("text")
+      .attr('x', function(d) {return d.x*2.5+350})
+      .attr('y', function(d) {return d.y*2.5+350})
+      .attr('fill','black')
+      .text(function(d){return d.palabra})
+
+    /*var node = svg.append("g")
         .attr("class", "node")
       .selectAll("g")
       .data(graph)
@@ -47,7 +67,7 @@ d3.csv("futaleufu_palabras.csv",types, function (error,graph){
         .attr('x', function(d) {return d.x*2.5+350})
         .attr('y', function(d) {return d.y*2.5+350})
         .attr('fill','black')
-        .text(function(d){return d.palabra})
+        .text(function(d){return d.palabra})*/
 });
 
 function dragstarted(d) {
